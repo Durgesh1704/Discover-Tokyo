@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  reviews   Review[]
+}
+
+model Attraction {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String
+  location    String
+  price       Float
+  duration    String // e.g., "2-3 hours"
+  image       String
+  rating      Float    @default(0)
+  reviewCount Int      @default(0) // Renamed from reviews to avoid conflict
+  tags        String   // JSON string of tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bookings    Booking[]
+  reviews     Review[]
+}
+
+model Booking {
+  id           String   @id @default(cuid())
+  attractionId String
+  userName     String
+  userEmail    String
+  visitDate    String
+  visitors     Int      @default(1)
+  totalPrice   Float
+  status       String   @default("confirmed") // confirmed, cancelled, completed
+  specialRequests String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  attraction   Attraction @relation(fields: [attractionId], references: [id])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  rating       Int      // 1-5 stars
+  comment      String
+  images       String?  // JSON array of image URLs
+  helpful     Int      @default(0) // Number of "was this helpful" votes
+  verified     Boolean  @default(false) // Whether user actually visited
+  response     String?  // Owner response to review
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  attractionId String
+  attraction   Attraction @relation(fields: [attractionId], references: [id])
+  
+  @@unique([userId, attractionId]) // One review per user per attraction
+}
